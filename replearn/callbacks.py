@@ -4,6 +4,8 @@ Custom Keras callbacks for logging and checkpointing.
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
+from pathlib import Path
+import csv
 
 
 class AzureLoggingCallback(tf.keras.callbacks.Callback):
@@ -22,13 +24,23 @@ class AccCallback(tf.keras.callbacks.Callback):
         super(AccCallback, self).__init__()
         self.acc_model = acc_model
         self.acc_data = acc_data
+        self.history = []
+        path = Path.cwd() / 'outputs'
+        path.mkdir(parents=True, exist_ok=True)
+        self.path = path / 'accuracy.csv'
+        f = open(self.path, 'w')
+        f.close()  # create empty accuracy log file
 
     def on_epoch_end(self, epoch, logs=None):
         accs = []
         for x in self.acc_data:
             accs.append(self.acc_model(x).numpy()[np.newaxis, :])
-        accs.pop()  # remove stats from last batch, probably partial batch
-        print(np.mean(np.concatenate(accs), axis=0))
+        accs.pop()  # remove stats from last batch - probably a partial batch
+        a = np.mean(np.concatenate(accs), axis=0)
+        print(a)
+        with open(self.path, 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow(a)
 
 
 def build_callbacks(config, run_logger, acc_model, data):
