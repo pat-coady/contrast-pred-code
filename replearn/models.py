@@ -31,18 +31,16 @@ def genc_model(dim_z):
     -------
     model : keras.Model
         Model that expects time sequence input of shape (N, T) and returns an encoded
-        sequence of shape (N, T//160, z_dim=64). N is the batch dimension, T is the
+        sequence of shape (N, T//256, dim_Z). N is the batch dimension, T is the
         sequence length.
     """
     model = keras.Sequential(name='genc')
     model.add(Lambda(lambda x: K.expand_dims(x, axis=-1)))  # add dim for Conv1D
-    model.add(Conv1D(filters=8, kernel_size=10, strides=5, padding='causal',
+    model.add(Conv1D(filters=64, kernel_size=8, strides=8, padding='causal',
                      activation='relu', kernel_initializer='he_uniform'))
-    model.add(Conv1D(filters=16, kernel_size=8, strides=4, padding='causal',
+    model.add(Conv1D(filters=64, kernel_size=4, strides=4, padding='causal',
                      activation='relu', kernel_initializer='he_uniform'))
-    model.add(Conv1D(filters=32, kernel_size=4, strides=2, padding='causal',
-                     activation='relu', kernel_initializer='he_uniform'))
-    model.add(Conv1D(filters=64, kernel_size=4, strides=2, padding='causal',
+    model.add(Conv1D(filters=64, kernel_size=4, strides=4, padding='causal',
                      activation='relu', kernel_initializer='he_uniform'))
     model.add(Conv1D(filters=dim_z, kernel_size=4, strides=2, padding='causal',
                      kernel_initializer='he_uniform'))

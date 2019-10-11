@@ -36,10 +36,11 @@ def save_state(config):
 
 
 def init_azure_logging(config):
-    """Build Azure run logger."""
+    """Get Azure run logger and log all configuration settings."""
     from azureml.core.run import Run
     run_logger = Run.get_context()
-    run_logger.log('lr', config['lr'])
+    for k in config:
+        run_logger.log(k, config[k])
 
     return run_logger
 
@@ -105,7 +106,7 @@ def main(config):
     save_state(config)
     callbacks = build_callbacks(config, run_logger, acc_model, ds_val)
     model.fit(x=ds_train, validation_data=ds_val, epochs=config['epochs'],
-              validation_steps=100, callbacks=callbacks)
+              validation_steps=100, callbacks=callbacks, verbose=config['verbose'])
     # save encoding layer weights:
     model.get_layer('genc').save_weights(str(Path.cwd() / 'outputs' / 'genc.h5'))
 
@@ -133,9 +134,13 @@ if __name__ == "__main__":
         help='Dimension of encoding vector (default=40).',
         default=40)
     parser.add_argument(
-        '--data_dir', type=str,
-        help='Data directory mounting point.',
-        default=str(Path.home()))
+        '--train_dir', type=str,
+        help='Path to folder containing training *.tfr files.',
+        default=str(Path.home() / 'Data' / 'LibriSpeech' / 'tfrecords' / 'train-clean-100'))
+    parser.add_argument(
+        '--val_dir', type=str,
+        help='Path to folder containing validation *.tfr files.',
+        default=str(Path.home() / 'Data' / 'LibriSpeech' / 'tfrecords' / 'dev-clean'))
     parser.add_argument(
         '--optimizer', type=str,
         help='Choose optimizer: "adam" or "sgd_mom". (default=adam)',
@@ -146,8 +151,8 @@ if __name__ == "__main__":
         default=0)
     parser.add_argument(
         '-ps', '--pred_steps', type=int,
-        help='Number of future encoding steps to predict. (default=12)',
-        default=12)
+        help='Number of future encoding steps to predict. (default=10)',
+        default=10)
     parser.add_argument(
         '--num_neg', type=int,
         help='Number of negative samples. (default=10)',
@@ -156,5 +161,10 @@ if __name__ == "__main__":
         '--azure_ml', action='store_true',
         help='Enable Azure ML logging.')
     parser.set_defaults(azure_ml=False)
+    parser.add_argument(
+        '-v', '--verbose', type=int,
+        help='Verbose level for Keras Model.fit(). (default=2)',
+        default=2
+    )
 
     main(vars(parser.parse_args()))
