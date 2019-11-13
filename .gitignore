@@ -4,3 +4,6 @@ outputs/
 replearn.egg-info/
 replearn/.ipynb_checkpoints/
 replearn/__pycache__/
+notebooks/.ipynb_checkpoints/
+notebooks/.azureml/
+
