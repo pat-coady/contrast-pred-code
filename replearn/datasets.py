@@ -7,6 +7,7 @@ import tensorflow as tf
 from tensorflow.keras.utils import Sequence
 import numpy as np
 from pathlib import Path
+import glob
 
 
 class Noise(Sequence):
@@ -54,8 +55,13 @@ def decode(example):
     return x, y
 
 
-def librispeech_filelist(dir_name):
-    path = Path.home() / 'Data' / 'LibriSpeech' / 'tfrecords' / dir_name
+def librispeech_filelist(config, mode):
+    if mode == 'train':
+        path = Path(config['train_dir'])
+    elif mode == 'val':
+        path = Path(config['val_dir'])
+    else:
+        path = None
     return list(map(lambda p: str(p), path.rglob('*.tfr')))
 
 
@@ -73,13 +79,7 @@ def librispeech(config, mode):
     -------
     tf.data.Dataset with batch size = config['batch_sz']
     """
-    if mode == 'train':
-        dir_name = 'train-clean-100'
-    elif mode == 'val':
-        dir_name = 'dev-clean'
-    else:
-        return None
-    filenames = librispeech_filelist(dir_name)
+    filenames = librispeech_filelist(config, mode)
     filenames.sort()
     ds_filenames = tf.data.Dataset.from_tensor_slices(tf.constant(filenames))
     if mode == 'train':
