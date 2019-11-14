@@ -48,7 +48,7 @@ def genc_model(dim_z):
     return model
 
 
-def ar_model(t_skip, pred_steps, dim_c, dim_z, **kwargs):
+def ar_model(t_skip, pred_steps, dim_c, dim_z):
     """Build CPC auto-regressive model (i.e. g_ar).
 
     Parameters
@@ -83,8 +83,8 @@ class GenTargets(Layer):
 
     Notes on negative sampling implementation:
     1) Sampling done with replacement
-    2) Positive examples are selected with p ~= 1/target_len. Sampling code
-       was easier to write this way.
+    2) Possible for occassional postive examples included with negatives, with
+       probability ~= 1/target_len. Sampling code was easier to write this way.
     3) Negative examples not selected across batch, only within example. This
        approach had consistently best performance in papers.
     4) For easy coding, negative indices same for all batch examples.
@@ -105,6 +105,10 @@ class GenTargets(Layer):
         self.t_skip = t_skip
         self.pred_steps = pred_steps
         self.num_neg = num_neg
+        self.batch_sz = None    # set in .build()
+        self.t = None
+        self.dim_z = None
+        self.target_len = None
 
     def build(self, input_shape):
         self.batch_sz, self.t, self.dim_z = input_shape
@@ -114,7 +118,7 @@ class GenTargets(Layer):
         # 3. prediction offset by 1 (predict future only): subtract 1
         self.target_len = self.t - self.t_skip - self.pred_steps - 1
 
-    def call(self, inputs):
+    def call(self, inputs, **kwargs):
         inputs = K.stop_gradient(inputs)
         # sample negative targets
         num_samples = self.num_neg * self.target_len * self.pred_steps
@@ -157,7 +161,7 @@ class ARLoss(Layer):
 
     Equation 4 from CPC paper.
     """
-    def call(self, inputs):
+    def call(self, inputs, **kwargs):
         # TODO - optimized back-prop with K.categorical_cross_entropy()?
         z, z_hat = inputs
         # z.shape() = (B, neg+1, T, pred_steps, dim_z)
@@ -175,4 +179,4 @@ class ARLoss(Layer):
         return loss, acc
 
     def compute_output_shape(self, input_shape):
-        return (input_shape,)
+        return input_shape,

@@ -7,7 +7,6 @@ import tensorflow as tf
 from tensorflow.keras.utils import Sequence
 import numpy as np
 from pathlib import Path
-import glob
 
 
 class Noise(Sequence):

@@ -68,14 +68,15 @@ def build_model(config):
     inputs = Input(shape=(samples_per_clip,), name='inputs')
     genc = genc_model(dim_z=config['dim_z'])  # encoder
     z = genc(inputs)
-    ar = ar_model(**config)  # auto-regressive model
+    ar = ar_model(config['t_skip'], config['pred_steps'],
+                  config['dim_c'], config['dim_z'])        # auto-regressive model
     z_hat = ar(z)
     gen_targets = GenTargets(t_skip=config['t_skip'],
                              pred_steps=config['pred_steps'],
                              num_neg=config['num_neg'],
                              name='gen_targets')
     z_targ = gen_targets(z)  # shift and crop auto-regressive targets, add negative samples
-    loss_fn = ARLoss(name='ar_loss')       # auto-regressive loss
+    loss_fn = ARLoss(name='ar_loss')      # auto-regressive loss
     loss, acc = loss_fn([z_targ, z_hat])  # loss calculated in model, auto-regressive task
     model = Model(inputs=inputs, outputs=loss)
     # acc_model: accuracy metric for each future time step. shape=(pred_steps,)
