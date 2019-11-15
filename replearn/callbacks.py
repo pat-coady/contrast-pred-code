@@ -66,8 +66,6 @@ def build_lr_scheduler(config):
             return config['lr'] / scale
         elif epoch < 20:
             return config['lr'] / scale ** 2
-        elif epoch < 20:
-            return config['lr'] / scale ** 3
         else:
             return config['lr'] / scale ** 3
 

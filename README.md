@@ -6,7 +6,7 @@ This is an implementation of:
 
 https://arxiv.org/abs/1807.03748
 
-The above paper experiments with representation learning for audio, vision, natural language, and reinforcement learning. The implementation here is focuses on learning a representation for speech. The training data is from the [LibriSpeech](http://www.openslr.org/12).
+The above paper experiments with representation learning for audio, vision, natural language, and reinforcement learning. The implementation focuses on learning a representation for speech. The training data is from [LibriSpeech](http://www.openslr.org/12).
 
 ### Instructions
 
@@ -19,7 +19,7 @@ Extract to your home directory:
 ```
 <home>/Data/LibriSpeech/
     dev-clean/
-    train-clean-100
+    train-clean-100/
 ```
 
 Note: There are more corrupted datasets available at LibriSpeech. It is probably worthwhile to train a representation with noisier and generally less clean recordings.
@@ -44,6 +44,8 @@ python train.py
 4. The encoder weights are saved at the completion of training.
 
 `<cwd>/outputs/genc.h5`
+
+5. Now that we have a trained encoder, we can use it to extract a representation for other audio tasks. One possible application is pre-processing audio samples for keyword spotting. This [kws implementation](https://gitlab.analog.com/boston-garage/kws) is set up to use weights from this trained model.
 
 ### Requirements
 
