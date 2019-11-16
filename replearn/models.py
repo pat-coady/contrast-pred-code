@@ -5,7 +5,6 @@ Model components for Contrastive Predictive Coding.
 2. ar_model: auto-regressive model
 3. GenTargets: gerenate positive and negative targets for auto-regressive model
 4. ARLoss: auto-regressive loss + prediction accuracy
-
 """
 import tensorflow as tf
 from tensorflow import keras
