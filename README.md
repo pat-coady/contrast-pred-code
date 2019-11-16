@@ -12,9 +12,9 @@ The learning task for contrastive predictive coding is well summarized by figure
 
 ![Figure 1](assets/network.png)
 
-The encoder, $g_{enc}$, ingests a window of raw audio samples and outputs an embedding vector: $z_t$. An auto-regressive network, $g_{ar}$, is tasked with predicting future embeddings ($z_{t+1}$, $z_{t+2}$, ...) given previous embeddings ($z_{t}$, $z_{t-1}$, ...). At each time-step, the auto-regressive network outputs a context vector, $c_t$. Future time steps are predicted by applying a affine transformations to the context: $\hat{z}_{t+n}=f(c_t, \theta_n)$.
+The encoder, g\_enc, ingests a window of raw audio samples and outputs an embedding vector: z\_t. An auto-regressive network, g\_ar, is tasked with predicting future embeddings (z\_t+1, z\_t+2, ...) given previous embeddings (z\_t, z\_t-1, ...). At each time-step, the auto-regressive network outputs a context vector, c\_t. Future time steps are predicted by applying a affine transformations to the context: z^hat_n=f(c_t_n, theta_n).
 
-At first blush, it would seem sufficient to minimize some loss  $\mathcal{L}=\sum_{n=1}^{n=T} f(z_{t+n}, \hat{z}_{t+n})$. Unfortunately, the network will quickly learn to game the system by learning an encoder that trivially maps all inputs to the same vector. To resolve this problem, the authors introduces a "contrastive loss" [2]. The network is presented with lineup of examples: the true future steps and K distractor steps drawn from the same sequence.
+At first blush, it would seem sufficient to minimize some loss as a function of z and z_hat for all predicted time steps. Unfortunately, the network will quickly learn to game the system by learning an encoder that trivially maps all inputs to the same vector. To resolve this problem, the authors introduces a "contrastive loss" [2]. The network is presented with lineup of examples: the true future steps and K distractor steps drawn from the same sequence.
 
 To suceed at this discrimitive task - true next step vs. imposter next steps - the network must learn an embedding that is highly informative of future steps. By restricting the dimension of the encoding, the network should avoid wasting its limited resources on non-informative noise or redundant information.
 
@@ -47,7 +47,8 @@ To suceed at this discrimitive task - true next step vs. imposter next steps - t
 
 **auto-regressive loss (`ARLoss`)**
 
-- calculate dot-product similarity of $\hat{z}_{t+n}$ and true  $z_{t+n}^*$sampled $z_{t+n}$
+- calculate dot-product similarity of z's and z_hat
+  - the z's will the true target z and contrastive negative samples
 - softmax of dot-product similarities, then cross-entropy loss
 
 ### Experimental Results
@@ -62,7 +63,8 @@ To suceed at this discrimitive task - true next step vs. imposter next steps - t
 - Training regimen: 25 epochs, 1/3 LR decay at 10, 15, 20 epoch
 - 10 negative (contrastive) samples
 - predict 10 future steps
-- $z_t \in \mathbb{R}^{40}$, $c_t \in \mathbb{R}^{40}$
+- by default, z_t is in R^40 and c_t is also in R^40
+  - It sure would be nice if GitHub supported LaTex in markdown.
 
 ##### Training Results
 
