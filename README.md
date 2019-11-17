@@ -71,9 +71,9 @@ The below plot shows the auto-regressive model's prediction accuracy for 1, 2, 5
 
 ##### Is the Learned Representation Useful?
 
-We used the [Google keyword dataset](https://www.kaggle.com/c/tensorflow-speech-recognition-challenge) (KWS) to evaluate the performance of our CPC-trained speech encoder. This dataset contains ~1,000 x 1 second recordings of 30 different key words (about 8 hours of data). We compare the performance of our representation versus a log-mel spectrogram (the go-to encoding for speech / sound classification).
+We used the [Google Speech Commands data set](https://ai.googleblog.com/2017/08/launching-speech-commands-dataset.html) to evaluate the performance of our CPC-trained speech encoder. This dataset contains ~2,000 x 1 second recordings of 30 different speech commands (about 8 hours of data). We compare the performance of our representation versus a log-mel spectrogram (the go-to encoding for speech / sound classification).
 
-The keyword detection model can be found [TODO](here). Briefly, it is a stack of 3 x conv-conv-pool layers. All Conv2D layers use 3x3 kernels with batch normalization and a ReLU activation function. The final convolution is 3x3x30, followed by Global Average Pooling to generate 30 class logits.
+The speech command model can be found [here](https://github.com/pat-coady/speech-command). Briefly, it is a stack of 3 x conv-conv-pool layers. All Conv2D layers use 3x3 kernels with batch normalization and a ReLU activation function. The final convolution is 3x3x30, followed by Global Average Pooling to generate 30 class logits.
 
 The results are reasonably good, but substantially worse than the log-mel spectrogram baseline:
 
@@ -85,7 +85,7 @@ The results are reasonably good, but substantially worse than the log-mel spectr
 | CPC-trained encoder                       | 98.7%          | 90.5%               |
 | CPC-trained encoder + supervised training | 98.8%          | 93.4%               |
 
-**Table 1.** The random encoder uses the untrained Conv1D encoder network (`genc_model`) to process the audio samples. "+ supervised training" indicates the encoder network is trained on the supervised keyword spotting task.
+**Table 1.** The random encoder uses the untrained Conv1D encoder network (`genc_model`) to process the audio samples. "+ supervised training" indicates the encoder network is trained on the supervised speech command task.
 
 We learned a much stronger representation than a cascade of randomly initialized convolutions: 90.5% vs. 61.5% accuracy. This may seem like faint praise, but randomly initialized convolutions can do surprisingly well. See, for example, [Deep Image Prior](https://arxiv.org/abs/1711.10925) [3]. Unfortunately, just training our encoder directly on the supervised KWS task performs better than an encoder trained with CPC: 92.7% vs. 90.5%. And we are best off just using the log-mel spectrogram, which reaches an accuracy of 95.2%.
 
@@ -131,7 +131,7 @@ python train.py
 
 `outputs/genc.h5`
 
-5. Now that we have a trained encoder, we can use it to extract a representation for other audio tasks. One possible application is pre-processing audio samples for keyword spotting. This [TODO](link) is set up to use encoder weights from the CPC-trained model.
+5. Now that we have a trained encoder, we can use it to extract a representation for other audio tasks. One possible application is pre-processing audio samples for speech command classification, see example [here](https://github.com/pat-coady/speech-command).
 
 ### Requirements
 
@@ -147,3 +147,4 @@ azureml     # optional - for logging on MSFT Azure ML infrastructure
 1. [Representation Learning with Contrastive Predictive Coding](https://arxiv.org/abs/1807.03748) (Aaron van den Oord, Yazhe Li, and Oriol Vinyals).
 2. [Noise-contrastive estimation: A new estimation principle for unnormalized statistical models](http://proceedings.mlr.press/v9/gutmann10a/gutmann10a.pdf) (Michael Gutmann and Aapo Hyvarinen)
 3. [Deep Image Prior](https://arxiv.org/abs/1711.10925) (Dmitry Ulyanov, Andrea Vedaldi, and Victor Lempitsky)
+
