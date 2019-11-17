@@ -2,19 +2,17 @@
 
 ### Overview
 
-This is a minimal implementation of [Representation Learning with Contrastive Predictive Coding (CPC)](https://arxiv.org/abs/1807.03748) [1].
+This is an implementation of [Representation Learning with Contrastive Predictive Coding (CPC)](https://arxiv.org/abs/1807.03748) [1].
 
-The paper experiments with representation learning for audio, vision, natural language, and reinforcement learning. Finding a good representation of data can greatly ease downstream prediction tasks. Word embeddings used in Natural Language Processing is just one example where stronger are directly responsible for breakthrough performance.
+Finding a good representation of data can greatly ease downstream prediction tasks. Word embeddings used in Natural Language Processing is just one example where stronger representations led to breakthrough performance. The CPC paper representation learning experiments for audio, vision, natural language, and reinforcement learning. The implementation in this repo focuses on learning a representation for speech using 100 hours of [LibriSpeech](http://www.openslr.org/12) recordings.
 
-The implementation in this repo focuses on learning a representation for speech. The training data contains 100 hours of speakers reading books: [LibriSpeech](http://www.openslr.org/12).
-
-The learning task for contrastive predictive coding is well summarized by figure 1 in the paper.
+The learning task for contrastive predictive coding is well summarized by figure 1 from the CPC paper.
 
 ![Figure 1](assets/network.png)
 
-The encoder, g\_enc, ingests a window of raw audio samples and outputs an embedding vector: z\_t. An auto-regressive network, g\_ar, is tasked with predicting future embeddings (z\_t+1, z\_t+2, ...) given previous embeddings (z\_t, z\_t-1, ...). At each time-step, the auto-regressive network outputs a context vector, c\_t. Future time steps are predicted by applying a affine transformations to the context: z^hat_n=f(c_t_n, theta_n).
+The encoder, g\_enc, ingests a window of raw audio samples and outputs an embedding vector: z\_t. An auto-regressive network, g\_ar, is tasked with predicting future embeddings (z\_{t+1}, z\_{t+2}, ...) given previous embeddings (z\_t, z\_{t-1}, ...). At each time-step, the auto-regressive network outputs a context vector, c\_t. Future time steps are predicted by applying affine transformations to the context: z_hat_n=f(c_{t+n}, theta_n).
 
-At first blush, it would seem sufficient to minimize some loss as a function of z and z_hat for all predicted time steps. Unfortunately, the network will quickly learn to game the system by learning an encoder that trivially maps all inputs to the same vector. To resolve this problem, the authors introduces a "contrastive loss" [2]. The network is presented with lineup of examples: the true future steps and K distractor steps drawn from the same sequence.
+At first blush, it would seem sufficient to minimize some distance measure between z and z_hat for all predicted time steps. Unfortunately, the network will quickly learn to game the system by trivially mapping all inputs to the same vector. To resolve this problem, the authors introduces a "contrastive loss" [2]. The network is presented with lineup of examples: the true future steps and K distractor steps drawn from the same sequence.
 
 To suceed at this discrimitive task - true next step vs. imposter next steps - the network must learn an embedding that is highly informative of future steps. By restricting the dimension of the encoding, the network should avoid wasting its limited resources on non-informative noise or redundant information.
 
@@ -25,14 +23,14 @@ To suceed at this discrimitive task - true next step vs. imposter next steps - t
 - stack of 4 x Conv1D **causal** convolutions, ReLU activations
   - it is important that future information isn't leaked to the encoder
 - receptive field 256 samples, stride 128 samples
-- default output dimension (dim_z) = 40
+- default output dimension, dim_z = 40
 - given a 1D audio input of length T, the output is 2D with shape (T // 256, dim_z)
   - for a 16ksample input and default settings this is a 2D image with shape: (62, 40)
 
 **auto-regressive model (`ar_model`)**
 
 - single-layer Recurrent NN (GRU)
-- default context dimension (dim_c) = 40
+- default context dimension, dim_c = 40
 - default GRU hidden units = dim_c = 40
 - default prediction = 10 future time steps
 
@@ -48,7 +46,7 @@ To suceed at this discrimitive task - true next step vs. imposter next steps - t
 **auto-regressive loss (`ARLoss`)**
 
 - calculate dot-product similarity of z's and z_hat
-  - the z's will the true target z and contrastive negative samples
+  - the z's include the true target z and contrastive negative samples
 - softmax of dot-product similarities, then cross-entropy loss
 
 ### Experimental Results
@@ -60,21 +58,20 @@ To suceed at this discrimitive task - true next step vs. imposter next steps - t
 - Training data: LibriSpeech
   - train: train-clean-100
   - validation: dev-clean
-- Training regimen: 25 epochs, 1/3 LR decay at 10, 15, 20 epoch
+- Training regimen: 25 epochs, 1/3x LR at epochs 10, 15, and 20
 - 10 negative (contrastive) samples
 - predict 10 future steps
 - by default, z_t is in R^40 and c_t is also in R^40
-  - It sure would be nice if GitHub supported LaTex in markdown.
 
 ##### Training Results
 
-The below plot shows the auto-regressive model's prediction accuracy for 1, 2, 5, and 10 steps into the future. As one would expect, the accuracy decreases for steps further into the future. But, even at 10 steps into the future, the model beats random guessing (10% accuracy) by a factor of 2. We've defined a non-trivial auto-regressive task where the encodings contain information about the future evolution of the audio.
+The below plot shows the auto-regressive model's prediction accuracy for 1, 2, 5, and 10 steps into the future. As one would expect, the accuracy decreases for steps further into the future. But, even at 10 steps into the future, the model beats random guessing (10% accuracy) by a factor of 2. We've defined a non-trivial auto-regressive task where the encodings contain information helpful to predicting the evolution of the audio.
 
 ![Figure 2](assets/accuracy.png)
 
 ##### Is the Learned Representation Useful?
 
-We used the [Google keyword dataset](https://www.kaggle.com/c/tensorflow-speech-recognition-challenge) to evaluate the performance of our CPC-trained speech encoder. This dataset contains ~1,000 x 1 second recordings of 30 different key words (about 8 hours of data). We compare the performance of our representation versus a log-mel spectrogram (the go-to encoding for speech / sound classification).
+We used the [Google keyword dataset](https://www.kaggle.com/c/tensorflow-speech-recognition-challenge) (KWS) to evaluate the performance of our CPC-trained speech encoder. This dataset contains ~1,000 x 1 second recordings of 30 different key words (about 8 hours of data). We compare the performance of our representation versus a log-mel spectrogram (the go-to encoding for speech / sound classification).
 
 The keyword detection model can be found [TODO](here). Briefly, it is a stack of 3 x conv-conv-pool layers. All Conv2D layers use 3x3 kernels with batch normalization and a ReLU activation function. The final convolution is 3x3x30, followed by Global Average Pooling to generate 30 class logits.
 
@@ -90,16 +87,16 @@ The results are reasonably good, but substantially worse than the log-mel spectr
 
 **Table 1.** The random encoder uses the untrained Conv1D encoder network (`genc_model`) to process the audio samples. "+ supervised training" indicates the encoder network is trained on the supervised keyword spotting task.
 
-We clearly learned a much better representation than a cascade of randomly initialized convolutions: 90.5% vs. 61.5% accuracy. This may seem like faint praise, but randomly initialized convolutions can surprisingly well. See, for example, [Deep Image Prior](https://arxiv.org/abs/1711.10925) [3]. But, unfortunately, we are better off directly training our encoder on the supervised task: 92.7% vs. 90.5% accuracy. And best off just using the spectrogram, which reaches an accuracy of 95.2%.
+We learned a much stronger representation than a cascade of randomly initialized convolutions: 90.5% vs. 61.5% accuracy. This may seem like faint praise, but randomly initialized convolutions can do surprisingly well. See, for example, [Deep Image Prior](https://arxiv.org/abs/1711.10925) [3]. Unfortunately, just training our encoder directly on the supervised KWS task performs better than an encoder trained with CPC: 92.7% vs. 90.5%. And we are best off just using the log-mel spectrogram, which reaches an accuracy of 95.2%.
 
 So, the learned encoder is much better than a randomly initialized decoder, but underperforms the log-mel spectrogram. Here are a couple possible reasons:
 
-- The KWS classification network is a CNN and the log-mel spectrogram contains strong spatial structure. So the data and the network structure are well suited to each other. In contrast, the CPC-trained encoder feeds fully-connected layers in the GRU. The encoder and decode can cooperate to learn one of $dim_z !$ feature vector permutations - with most having no particular structure. 
+- The KWS classification network is a CNN and the log-mel spectrogram contains strong spatial structure - like an image. So the spectrogram and the network structure are well suited to each other. In contrast, the CPC-trained encoder feeds fully-connected layers in the GRU. The encoder and decode can cooperate to learn one of the dim_z factorial feature vector permutations - with most having no particular structure. 
 - The KWS dataset is reasonably large, with 8 hours of data for our target task.
 
 ### Usage Instructions
 
-1. Get [LibriSpeech data](http://www.openslr.org/12)
+1. Get the [LibriSpeech data](http://www.openslr.org/12)
 
 Download `dev-clean.tar.gz` and `train-clean-100.tar.gz`
 
@@ -111,7 +108,7 @@ Extract to your home directory:
     train-clean-100/
 ```
 
-Note: There are more corrupted datasets available at LibriSpeech. It is probably worthwhile to train a representation with noisier and generally less clean recordings.
+Note: There are more corrupted datasets available at LibriSpeech. It is probably worthwhile to train a representation with more data, and noisier data.
 
 2. Create TFRecords files
 
@@ -134,7 +131,7 @@ python train.py
 
 `outputs/genc.h5`
 
-5. Now that we have a trained encoder, we can use it to extract a representation for other audio tasks. One possible application is pre-processing audio samples for keyword spotting. This [kws implementation](https://gitlab.analog.com/boston-garage/kws) is set up to use weights from this trained model.
+5. Now that we have a trained encoder, we can use it to extract a representation for other audio tasks. One possible application is pre-processing audio samples for keyword spotting. This [TODO](link) is set up to use encoder weights from the CPC-trained model.
 
 ### Requirements
 
